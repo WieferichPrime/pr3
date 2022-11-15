@@ -1,4 +1,8 @@
 import numpy as np
+import csv
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def neighbors(a, row, col):
@@ -11,7 +15,7 @@ def neighbors(a, row, col):
                                    (0 <= i < len(a)))]
 
 
-def unhappy_iter(b):
+def happy_define(b):
     for i in range(len(b)):
         for j in range(len(b[0])):
             boys_next_door = neighbors(b, i, j)
@@ -24,39 +28,41 @@ def unhappy_iter(b):
             else:
                 b[i][j]['status'] = None
 
+
 def main():
     n = int(input('Grid size:'))
+    m = int(input('Iterations count:'))
     b = np.random.choice(['B', 'W', '_'], n ** 2, p=[0.45, 0.45, 0.1])
     b = [[{'color': b[(i + j * n)], 'status': None} for i in range(n)] for j in range(n)]
 
-    print('before:')
+    happy_define(b)
+
+    data = []
     for i in range(n):
         for j in range(n):
-            print(b[i][j]['color'], end=" ")
-        print()
+            data.append((i, j, b[i][j]['color']))
 
-    unhappy_iter(b)
+    with open("snapshot_before.csv", "wt") as fp:
+        writer = csv.writer(fp, delimiter=",")
+        writer.writerow(["x", "y", "type"])  # write header
 
-    unhappy = 0
+        writer.writerows(data)
 
-    for i in range(n):
-        for j in range(n):
-            if b[i][j]['status'] == 'unhappy':
-                unhappy += 1
-
-    print('Unhappy:', unhappy)
+    snapshot = pd.read_csv('snapshot_before.csv')
+    sns.scatterplot(snapshot, x=snapshot['x'], y=snapshot['y'], hue='type')
+    plt.savefig('before.jpeg')
+    plt.show()
 
 
-    for _ in range(10000):
+    for _ in range(m):
         rows_with_human = [i for i, _ in enumerate(b) if len(list(filter(lambda x: x['color'] != '_' and x['status'] == 'unhappy', b[i]))) != 0]
+        if len(rows_with_human) == 0:
+            print('Everybody happy')
+            break
         random_row = np.random.choice(rows_with_human)
         not_empty_cells = [j for j, value in enumerate(b[random_row]) if value['color'] != '_' and value['status'] == 'unhappy']
         random_col = np.random.choice(not_empty_cells)
         not_empty_cell = random_row, random_col
-
-        if len(rows_with_human) == 0:
-            print('Everybody happy')
-            break
 
         rows_with_empty = [i for i, _ in enumerate(b) if len(list(filter(lambda x: x['color'] == '_', b[i]))) != 0]
         random_row = np.random.choice(rows_with_empty)
@@ -65,21 +71,24 @@ def main():
         empty_cell = random_row, random_col
 
         b[not_empty_cell[0]][not_empty_cell[1]], b[empty_cell[0]][empty_cell[1]] = b[empty_cell[0]][empty_cell[1]], b[not_empty_cell[0]][not_empty_cell[1]]
+        happy_define(b)
 
-    print('after:')
+    data = []
     for i in range(n):
         for j in range(n):
-            print(b[i][j]['color'], end=" ")
-        print()
+            data.append((i, j, b[i][j]['color']))
 
-    unhappy_iter(b)
+    with open("snapshot_after.csv", "wt") as fp:
+        writer = csv.writer(fp, delimiter=",")
+        writer.writerow(["x", "y", "type"])  # write header
 
-    unhappy = 0
-    for i in range(n):
-        for j in range(n):
-            if b[i][j]['status'] == 'unhappy':
-                unhappy += 1
-    print('Unhappy:', unhappy)
+        writer.writerows(data)
+
+    snapshot = pd.read_csv('snapshot_after.csv')
+    sns.scatterplot(snapshot, x=snapshot['x'], y=snapshot['y'], hue='type')
+    plt.savefig('after.jpeg')
+    plt.show()
+
 
 if __name__ == '__main__':
     main()
